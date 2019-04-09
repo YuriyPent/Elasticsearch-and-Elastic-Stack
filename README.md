@@ -102,3 +102,6 @@ curl -H 'Content-Type: application/json' -XGET '127.0.0.1:9200/shakespeare/_sear
 								}
 					}
 }'
+***
+#### Install openssh server
+sudo apt-get install openssh-server
