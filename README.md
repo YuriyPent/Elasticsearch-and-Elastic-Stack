@@ -1,5 +1,9 @@
 ### Setup Instructions
 #### 1. Install Virtualbox 
+### Port forwarding rules
+Elasticsearch	TCP	127.0.0.1	9200	-	9200
+Kibana		TCP	127.0.0.1	5601	-	5601
+SSH		TCP	127.0.0.1	22	-	22
 #### 2. Download Ubuntu server ISO
 ***
 In VirtualBox, select Machine / New and set up a Linux, Ubuntu 64-bit system. Set however much RAM you can spare on your system (I use 8GB on my 16GB system – at least 2GB to be safe.) Create a virtual drive wherever you can spare the space; you’ll need at least 20GB for this course. Start it, and select the ISO file you downloaded for Ubuntu to start the Ubuntu installation process. Go with the defaults unless you have reason to do otherwise, and enter whatever username and password you want for your root account. When prompted to write changes to disk, select “yes”. You can change selections using the TAB key, and confirm selections with ENTER.
