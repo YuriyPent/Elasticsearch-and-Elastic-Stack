@@ -658,11 +658,11 @@ curl -XGET '127.0.0.1:9200/ratings/rating/_search?size=0&pretty' -d ‘
 #### Using Kibana
 ***Installing kibana***
 
-***sudo apt-get install kibana***
-***sudo vi /etc/kibana/kibana.yml***
-***change server.host to 0.0.0.0***
-***add xpack.security.enabled: false***
-***sudo /bin/systemctl daemon-reload***
-***sudo /bin/systemctl enable kibana.service***
-***sudo /bin/systemctl start kibana.service***
-***kibana is now available on port 5601***
+* *sudo apt-get install kibana*
+* *sudo vi /etc/kibana/kibana.yml*
+* *change server.host to 0.0.0.0*
+* *add xpack.security.enabled: false*
+* *sudo /bin/systemctl daemon-reload*
+* *sudo /bin/systemctl enable kibana.service*
+* *sudo /bin/systemctl start kibana.service*
+* *kibana is now available on port 5601*
