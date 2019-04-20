@@ -276,11 +276,11 @@ curl -XGET '127.0.0.1:9200/movies/movie/_search?pretty' -d '
 ```
 curl -XGET '127.0.0.1:9200/movies/movie/_search?pretty' -d '
 {
-"query": {
-"wildcard": {
-"year": "1*"
-}
-}
+    "query": {
+        "wildcard": {
+            "year": "1*"
+        }
+    }
 }'
 ```
 ***“regexp” queries also exist.***
@@ -300,9 +300,139 @@ curl -XGET '127.0.0.1:9200/movies/movie/_search?pretty' -d '
 ```
 #### index-time with N-grams
 
-***“star”:
-unigram:  [ s, t, a, r ]
-bigram:  [ st, ta, ar ]
-trigram:  [ sta, tar ]
-4-gram:  [ star ]
-edge n-grams are built only on the beginning of each term.***
+***“star”:***
+* ***unigram:  [ s, t, a, r ]***
+* ***bigram:  [ st, ta, ar ]***
+* ***trigram:  [ sta, tar ]***
+* ***4-gram:  [ star ]***
+***edge n-grams are built only on the beginning of each term.***
+***
+#### Indexing n-grams
+```
+curl -XPUT '127.0.0.1:9200/movies?pretty' -d '
+{
+    "settings": {
+        "analysis": {
+            "filter": {
+                "autocomplete_filter": {
+                    "type": "edge_ngram",
+                        "min_gram": 1,
+                            "max_gram": 20
+                }
+        },
+    "analyzer": {
+        "autocomplete": {
+            "type": "custom",
+                "tokenizer": "standard",
+                    "filter": [
+                        "lowercase",
+                            "autocomplete_filter"
+                     ]
+                 }
+            }
+        }
+    }
+}'
+```
+#### Now map your field with it
+```
+curl -XPUT '127.0.0.1:9200/movies/_mapping/movie?pretty' -d '
+{
+    "movie": {
+        "properties" : {
+            "title": {
+                "type" : "string",
+                    "analyzer": "autocomplete"
+             } 
+        }
+    }
+}'
+```
+#### But only use n-grams on the index side!
+```
+curl -XGET 127.0.0.1:9200/movies/movie/_search?pretty -d '
+{
+    "query": {
+        "match": {
+            "title": {
+                "query": "sta",
+                    "analyzer": "standard"
+            }
+        }
+    }
+}'
+```
+***Otherwise our query will also get split into n-grams, and we’ll get results for everything that matches ‘s’, ‘t’, ‘a’, ‘st’, etc.***
+***
+#### Importing data
+***you can import from just about anything stand-alone scripts can submit bulk documents via REST API logstash and beats can stream data from logs, S3, databases, and more AWS systems can stream in data via lambda or kinesis firehose kafka, spark, and more have Elasticsearch integration add-ons***
+#### importing via script / json
+* read in data from some distributed filesystem
+* transform it into JSON bulk inserts
+* submit via HTTP / REST to your elasticsearch cluster
+```
+import csv
+import re
+csvfile = open('ml-latest-small/movies.csv', 'r')
+reader = csv.DictReader( csvfile )
+for movie in reader:
+    print ("{ \"create\" : { \"_index\": \"movies\", \"_type\": \"movie\", \"_id\" : \"" , movie['movieId'], "\" } }", sep='')
+    title = re.sub(" \(.*\)$", "", re.sub('"','', movie['title']))
+    year = movie['title'][-5:-1]
+    if (not year.isdigit()):
+        year = "2016"
+    genres = movie['genres'].split('|')
+    print ("{ \"id\": \"", movie['movieId'], "\", \"title\": \"", title, "\", \"year\":", year, ", \"genre\":[", end='', sep='')
+    for genre in genres[:-1]:
+        print("\"", genre, "\",", end='', sep='')
+    print("\"", genres[-1], "\"", end = '', sep='')
+    print ("] }")
+```
+#### importing via client api’s
+***A less hacky script.***
+***free elasticsearch client libraries are available for pretty much any language.***
+* java has a client maintained by elastic.co
+* python has an elasticsearch package
+* elasticsearch-ruby
+* several choices for scala
+* elasticsearch.pm module for perl
+***You don’t have to wrangle JSON.**
+```
+es = elasticsearch.Elasticsearch()
+es.indices.delete(index="ratings",ignore=404)
+deque(helpers.parallel_bulk(es,readRatings(),index="ratings",doc_type
+es.indices.refresh()
+```
+***For completeness:***
+```
+import csv from collections import deque
+import elasticsearch from elasticsearch import helpers
+
+def readMovies():
+
+    csvfile = open('ml-latest-small/movies.csv', 'r')
+    reader = csv.DictReader( csvfile )
+    titleLookup = {}
+    for movie in reader:
+    titleLookup[movie['movieId']] = movie['title']
+    return titleLookup
+
+def readRatings():
+    csvfile = open('ml-latest-small/ratings.csv', 'r')
+    titleLookup = readMovies()
+    reader = csv.DictReader( csvfile )
+        for line in reader:
+            rating = {}
+            rating['user_id'] = int(line['userId'])
+            rating['movie_id'] = int(line['movieId'])
+            rating['title'] = titleLookup[line['movieId']]
+            rating['rating'] = float(line['rating'])
+            rating['timestamp'] = int(line['timestamp'])
+            yield rating
+            
+es = elasticsearch.Elasticsearch()
+
+es.indices.delete(index="ratings",ignore=404)
+deque(helpers.parallel_bulk(es,readRatings(),index="ratings",doc_type="rating"), maxlen=0)
+es.indices.refresh()
+```
