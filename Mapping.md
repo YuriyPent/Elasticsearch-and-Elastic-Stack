@@ -119,7 +119,8 @@ curl -XGET 127.0.0.1:9200/movies/movie/_search?pretty -d'
 ***
 #### Syntax reminder
 
-**queries are wrapped in a “query”: { } block, filters are wrapped in a “filter”: { } block.**
+**queries are wrapped in a “query”: { } block, 
+filters are wrapped in a “filter”: { } block.**
 
 *You can combine filters inside queries, or queries inside filters too.*
 ```
@@ -133,4 +134,101 @@ curl -XGET 127.0.0.1:9200/movies/movie/_search?pretty -d'
       }
 }'
 ```
+***
+#### Phrase matching
+**Must find all terms, in the right order.**
+```
+curl -XGET 127.0.0.1:9200/movies/movie/_search?pretty -d '
+{
+    "query": {
+        "match_phrase": {
+            "title": "star wars"
+        }
+    }
+}'
+```
+**order matters, but you’re OK with some words being in between the terms:**
+```
+curl -XGET 127.0.0.1:9200/movies/movie/_search?pretty -d '
+{
+    "query": {
+        "match_phrase": {
+            "title": {"query": "star beyond", "slop": 1}
+        }
+    }
+}'
+```
+***The slop represents how far you’re willing to let a term move to satisfy a phrase (in either direction!).
+Another example: “quick brown fox” would match “quick fox” with a slop of 1.***
 
+#### Proximity queries
+```
+curl -XGET 127.0.0.1:9200/movies/movie/_search?pretty -d '
+{
+    "query": {
+        "match_phrase": {
+            "title": {"query": "star beyond", "slop": 100}
+        }
+    }
+}'
+```
+***Remember this is a query – results are sorted by relevance. Just use a really high slop if you want to get any documents that contain the words in your phrase, but want documents that have the words closer together scored higher.***
+***
+#### pagination syntax
+```
+curl -XGET '127.0.0.1:9200/movies/movie/_search?size=2&from=2&pretty'
+
+curl -XGET 127.0.0.1:9200/movies/movie/_search?pretty -d'
+{
+    "from": 2,
+        "size": 2,
+            "query": {"match": {"genre": "Sci-Fi"}}
+}'
+```
+***
+#### Sorting your results is usually quite simple.
+```
+curl -XGET '127.0.0.1:9200/movies/movie/_search?sort=year&pretty'
+```
+***A string field that is analyzed for full-text search can’t be used to sort documents. This is because it exists in the inverted index as individual terms, not as the entire string.***
+***If you need to sort on an analyzed field, map a not_analyzed copy.***
+```
+curl -XPUT 127.0.0.1:9200/movies/ -d '
+{
+    "mappings": {
+        "movie": {
+            "_all": {"enabled": false},
+                "properties" : {
+                    "title": {
+                        "type" : "string",
+                            "fields": {
+                                  "raw": {
+                                     "type": "string",
+                                        "index": "not_analyzed"
+                        }
+                    } 
+                }
+            }
+        }
+    }
+}'
+```
+***Now you can sort on the not_analyzed “raw” field.***
+```
+curl -XGET '127.0.0.1:9200/movies/movie/_search?sort=title.raw&pretty'
+```
+***sadly, you cannot change the mapping on an existing index. You’d have to delete it, set up a new mapping, and re-index it. Like the number of shards, this is something you should think about before importing data into your index.***
+
+#### Another filtered query
+```
+curl -XGET 127.0.0.1:9200/movies/_search?pretty -d'
+{
+    "query":{
+        "bool": {
+            "must": {"match": {"genre": "Sci-Fi"}},
+                "must_not": {"match": {"title": "trek"}},
+                    "filter": {"range": {"year": {"gte": 2010, "lt": 2015}}}
+           }
+      }
+}'
+```
