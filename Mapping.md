@@ -467,10 +467,15 @@ stdout {
 }
 ```
 ***cd /usr/share/logstash/ ***
+
 ***sudo bin/logstash -f /etc/logstash/conf.d/logstash.conf***
+
 #### Logstash with mysql
+
 ***get a mysql connector from https://dev.mysql.com/downloads/connector/j/***
+
 ***wget https://dev.mysql.com/get/Downloads/Connector-J/mysql-connector-java-5.1.42.zip***
+
 ***unzip mysql-connector-java-5.1.42.zip***
 ```
 input {
