@@ -667,13 +667,21 @@ curl -XGET '127.0.0.1:9200/ratings/rating/_search?size=0&pretty' -d ‘
 * *sudo /bin/systemctl start kibana.service*
 * *kibana is now available on port 5601*
 #### Installing filebeat
-***sudo apt-get update && sudo apt-get install filebeat***
-***cd /usr/share/elasticsearch/***
-***sudo bin/elasticsearch-plugin install ingest-geoip***
-***sudo bin/elasticsearch-plugin install ingest-user-agent***
-***sudo /bin/systemctl stop elasticsearch.service***
-***sudo /bin/systemctl start elasticsearch.service***
-***sudo vi /etc/filebeat/filebeat.yml***
+
+* ***sudo apt-get update && sudo apt-get install filebeat***
+
+* ***cd /usr/share/elasticsearch/***
+
+* ***sudo bin/elasticsearch-plugin install ingest-geoip***
+
+* ***sudo bin/elasticsearch-plugin install ingest-user-agent***
+
+* ***sudo /bin/systemctl stop elasticsearch.service***
+
+* ***sudo /bin/systemctl start elasticsearch.service***
+
+* ***sudo vi /etc/filebeat/filebeat.yml***
+
 **Comment out existing log section, add at the bottom:**
 ```
 filebeat.modules:
@@ -683,11 +691,74 @@ var.paths: ["/home/fkane/logs/access*"]
 error:
 var.paths: ["/home/fkane/logs/error*"]
 ```
-***cd /usr/share/filebeat***
-***sudo scripts/import_dashboards***
-***sudo /bin/systemctl stop kibana.service***
-***sudo /bin/systemctl start kibana.service***
-***Make /home/\<username>/logs***
-***cd into it***
-***wget http://media.sundog-soft.com/es/access_log***
-***sudo /bin/systemctl start filebeat.service***
+* ***cd /usr/share/filebeat***
+
+* ***sudo scripts/import_dashboards***
+
+* ***sudo /bin/systemctl stop kibana.service***
+
+* ***sudo /bin/systemctl start kibana.service***
+
+* ***Make /home/\<username>/logs***
+
+* ***cd into it***
+
+* ***wget http://media.sundog-soft.com/es/access_log***
+
+* ***sudo /bin/systemctl start filebeat.service***
+***
+#### Adding an index
+***Creating a new index***
+```
+PUT /new_index
+{
+    “settings”: {
+        “number_of_shards”: 10,
+        “number_of_replicas”: 1
+    }
+}
+```
+***You can use index templates to automatically apply mappings, analyzers, aliases, etc.***
+**Alias rotation example**
+```
+POST /_aliases
+{
+    “actions”: [
+        { “add”:  { “alias”: “logs_current”, “index”: “logs_2017_06” }},
+        { “remove”:  { “alias”: “logs_current”, “index”: “logs_2017_05” }},
+        { “add”:  { “alias”: “logs_last_3_months”, “index”: “logs_2017_06” }},
+        { “remove”:  { “alias”: “logs_last_3_months”, “index”: “logs_2017_03” }}
+    ]
+}
+```
+***optionally…. DELETE /logs_2017_03***
+#### Heap sizing
+**Your heap size is wrong**
+***the default heap size is only 1GB!***
+***half or less of your physical memory should be allocated to elasticsearch***
+* the other half can be used by lucene for caching
+* if you’re not aggregating on analyzed string fields, consider using less than half for elasticsearch
+* smaller heaps result in faster garbage collection and more memory for caching
+```export ES_HEAP_SIZE=10g```
+or
+```ES_JAVA_OPTS=“-Xms10g –Xmx10g” ./bin/elasticsearch```
+don’t cross 32GB! pointers blow up then.
+***
+#### Monitoring with x-pack
+**What is x-pack?**
+* an elastic stack extension
+* security, monitoring, alerting, reporting, graph, and machine learning
+* formerly shield / watcher / marvel
+* only parts can be had for free – requires a paid license or trial otherwise
+**install x-packand mess around with it.**
+* **cd /usr/share/elasticsearch**
+* **sudo bin/elasticsearch-plugin install x-pack**
+* **sudo vi /etc/elasticsearch/elasticsearch.yml**
+**(Add xpack.security.enabled:false)**
+* **sudo /bin/systemctl stop elasticsearch.service**
+* **sudo /bin/systemctl start elasticsearch.service**
+* **cd /usr/share/kibana/**
+* **sudo -u kibana bin/kibana-plugin install x-pack**
+* **sudo /bin/systemctl stop kibana.service**
+* **sudo /bin/systemctl start kibana.service**
+
