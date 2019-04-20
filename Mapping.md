@@ -732,6 +732,7 @@ POST /_aliases
 }
 ```
 ***optionally…. DELETE /logs_2017_03***
+***
 #### Heap sizing
 **Your heap size is wrong**
 ***the default heap size is only 1GB!***
@@ -750,7 +751,9 @@ don’t cross 32GB! pointers blow up then.
 * security, monitoring, alerting, reporting, graph, and machine learning
 * formerly shield / watcher / marvel
 * only parts can be had for free – requires a paid license or trial otherwise
+
 **install x-packand mess around with it.**
+
 * **cd /usr/share/elasticsearch**
 * **sudo bin/elasticsearch-plugin install x-pack**
 * **sudo vi /etc/elasticsearch/elasticsearch.yml**
@@ -761,4 +764,71 @@ don’t cross 32GB! pointers blow up then.
 * **sudo -u kibana bin/kibana-plugin install x-pack**
 * **sudo /bin/systemctl stop kibana.service**
 * **sudo /bin/systemctl start kibana.service**
+***
+#### Using snapshots
+***Create a repository***
+```
+PUT _snapshot/backup-repo
+{
+    "type": "fs",
+        "settings": {
+            "location": "/home/<user>/backups/backup-repo"
+    }
+}
+```
+***Using snapshots***
 
+**snapshot all open indices:**
+
+```PUT _snapshot/backup-repo/snapshot-1```
+
+**get information about a snapshot:**
+
+```GET _snapshot/backup-repo/snapshot-1```
+
+**monitor snapshot progress:**
+
+```GET _snapshot/backup-repo/snapshot-1/_status```
+
+**restore a snapshot of all indices:**
+```
+POST /_all/_close
+POST _snapshot/backup-repo/snapshot-1/_restore
+```
+***
+#### Rolling restart procedure
+1. stop indexing new data if possible
+2. disable shard allocation
+3. shut down one node 
+4. perform your maintenance on it and restart, confirm it joins the cluster.
+5. re-enable shard allocation
+6. wait for the cluster to return to green status
+7. repeat steps 2-6 for all other nodes
+8. resume indexing new data
+***
+#### Cheat sheet
+
+**Disable shard allocation**
+
+```
+PUT _cluster/settings
+{
+    "transient": {
+        "cluster.routing.allocation.enable": "none"
+        }
+    }
+```
+
+**Stop elasticsearch safely**
+
+```sudo /bin/systemctl stop elasticsearch.service```
+
+**Enable shard allocation**
+```
+PUT _cluster/settings
+{
+    "transient": {
+        "cluster.routing.allocation.enable": "all"
+    }
+}
+```
