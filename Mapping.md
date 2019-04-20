@@ -466,7 +466,8 @@ stdout {
     }
 }
 ```
-***cd /usr/share/logstash/ ***
+
+***cd /usr/share/logstash/***
 
 ***sudo bin/logstash -f /etc/logstash/conf.d/logstash.conf***
 
@@ -576,3 +577,92 @@ curl -XGET
       }
 }'
 ```
+***Count up movies from each decade***
+```
+curl -XGET 
+'127.0.0.1:9200/movies/movie/_search?size=0&pretty' -d ‘
+{
+    "aggs" : {
+        "release": {
+            "histogram": {
+                "field": "year",
+                    "interval": 10
+                }
+           }
+      }
+}
+```
+***
+#### Time series
+***Break down website hits by hour:***
+```
+curl -XGET '127.0.0.1:9200/logstash-2015.12.04/logs/_search?size=0&pretty' -d ‘
+{
+    "aggs" : {
+        "timestamp": {
+            "date_histogram": {
+                "field": "@timestamp",
+                    "interval": "hour"
+                }
+          }
+     }
+}'
+```
+***When does google scrape me?***
+```
+curl -XGET '127.0.0.1:9200/logstash-2015.12.04/logs/_search?size=0&pretty' -d ‘
+{
+    "query" : {
+        "match": {
+            "agent": "Googlebot"
+        }
+    },
+    "aggs" : {
+        “timestamp": {
+            "date_histogram": {
+                "field": "@timestamp",
+                    "interval": "hour"
+            }
+        }
+    }
+}
+```
+***
+#### Nested aggregations
+***For reference, here’s the final query***
+```
+curl -XGET '127.0.0.1:9200/ratings/rating/_search?size=0&pretty' -d ‘
+{
+    "query": {
+        "match_phrase": {
+            "title": "Star Wars"
+        }
+    },
+    "aggs" : {
+        "titles": {
+            "terms": {
+                "field": "title.raw"
+    },
+    "aggs": {
+        "avg_rating": {
+            "avg": {
+                "field" : "rating"
+                        }
+                   }
+              }
+         }
+    }
+}'
+```
+***
+#### Using Kibana
+***Installing kibana***
+
+***sudo apt-get install kibana***
+***sudo vi /etc/kibana/kibana.yml***
+***change server.host to 0.0.0.0***
+***add xpack.security.enabled: false***
+***sudo /bin/systemctl daemon-reload***
+***sudo /bin/systemctl enable kibana.service***
+***sudo /bin/systemctl start kibana.service***
+***kibana is now available on port 5601***
