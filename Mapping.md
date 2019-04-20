@@ -518,9 +518,9 @@ input {
 ```
 ***
 #### Elasticsearch with spark
-***What is apache spark
+***What is apache spark***
 
-* “a fast and general engine for large-scale data processing”
+* a fast and general engine for large-scale data processing
 * a faster alternative to mapreduce
 * spark applications are written in java, scala, python, or r
 * supports sql, streaming, machine learning, and graph processing
@@ -656,7 +656,7 @@ curl -XGET '127.0.0.1:9200/ratings/rating/_search?size=0&pretty' -d ‘
 ```
 ***
 #### Using Kibana
-***Installing kibana***
+***Installing Kibana***
 
 * *sudo apt-get install kibana*
 * *sudo vi /etc/kibana/kibana.yml*
@@ -666,3 +666,28 @@ curl -XGET '127.0.0.1:9200/ratings/rating/_search?size=0&pretty' -d ‘
 * *sudo /bin/systemctl enable kibana.service*
 * *sudo /bin/systemctl start kibana.service*
 * *kibana is now available on port 5601*
+#### Installing filebeat
+***sudo apt-get update && sudo apt-get install filebeat***
+***cd /usr/share/elasticsearch/***
+***sudo bin/elasticsearch-plugin install ingest-geoip***
+***sudo bin/elasticsearch-plugin install ingest-user-agent***
+***sudo /bin/systemctl stop elasticsearch.service***
+***sudo /bin/systemctl start elasticsearch.service***
+***sudo vi /etc/filebeat/filebeat.yml***
+**Comment out existing log section, add at the bottom:**
+```
+filebeat.modules:
+- module: apache2
+access:
+var.paths: ["/home/fkane/logs/access*"]
+error:
+var.paths: ["/home/fkane/logs/error*"]
+```
+***cd /usr/share/filebeat***
+***sudo scripts/import_dashboards***
+***sudo /bin/systemctl stop kibana.service***
+***sudo /bin/systemctl start kibana.service***
+***Make /home/\<username>/logs***
+***cd into it***
+***wget http://media.sundog-soft.com/es/access_log***
+***sudo /bin/systemctl start filebeat.service***
