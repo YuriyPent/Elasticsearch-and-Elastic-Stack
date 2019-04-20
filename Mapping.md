@@ -436,3 +436,138 @@ es.indices.delete(index="ratings",ignore=404)
 deque(helpers.parallel_bulk(es,readRatings(),index="ratings",doc_type="rating"), maxlen=0)
 es.indices.refresh()
 ```
+***
+#### Installing logstash
+***sudo apt-get update***
+***sudo apt-get install logstash***
+***sudo vi /etc/logstash/conf.d/logstash.conf***
+```
+input {
+    file {
+        path => "/home/fkane/access_log“
+        start_position => "beginning"
+        ignore_older => 0
+    }
+}
+filter {
+    grok {
+        match => { "message" => "%{COMBINEDAPACHELOG}" }
+    }
+date {
+    match => [ "timestamp", "dd/MMM/yyyy:HH:mm:ss Z" ]
+    }
+}
+output {
+    elasticsearch {
+        hosts => ["localhost:9200"]
+    }
+stdout {
+    codec => rubydebug
+    }
+}
+```
+***cd /usr/share/logstash/ ***
+***sudo bin/logstash -f /etc/logstash/conf.d/logstash.conf***
+#### Logstash with mysql
+***get a mysql connector from https://dev.mysql.com/downloads/connector/j/***
+***wget https://dev.mysql.com/get/Downloads/Connector-J/mysql-connector-java-5.1.42.zip***
+***unzip mysql-connector-java-5.1.42.zip***
+```
+input {
+    jdbc {
+        jdbc_connection_string => "jdbc:mysql://localhost:3306/movielens"
+        jdbc_user => "root"
+        jdbc_password => “password"
+        jdbc_driver_library => "/home/fkane/mysql-connector-java-5.1.42/mysql-connector-java-5.1.42-bin.jar"
+        jdbc_driver_class => "com.mysql.jdbc.Driver"
+        statement => "SELECT * FROM movies"
+    }
+}
+```
+#### Logstash with s3 (amazon web services’ simple storage service cloud-based distributed storage system)
+***integration is easy-peasy.***
+```
+input {
+    s3 {
+        bucket => "sundog-es"
+        access_key_id => "AKIAIS****C26Y***Q"
+        secret_access_key => "d*****FENOXcCuNC4iTbSLbibA*****eyn****"
+    }
+}
+```
+#### Logstash with kafka
+apache kafka
+* open-source stream processing platform
+* high throughput, low latency
+* publish/subscribe
+* process streams
+* store streams
+```
+input {
+    kafka {
+        bootstrap_servers => "localhost:9092"
+        topics => ["kafka-logs"]
+    }
+}
+```
+***
+#### Elasticsearch with spark
+***What is apache spark
+
+* “a fast and general engine for large-scale data processing”
+* a faster alternative to mapreduce
+* spark applications are written in java, scala, python, or r
+* supports sql, streaming, machine learning, and graph processing
+**flink is nipping at spark’s heels, and can also integrate with elasticsearch.**
+```
+./spark-2.1.1-bin-hadoop2.7/bin/spark-shell --packages org.elasticsearch:elasticsearch-spark-20_2.11:5.4.3
+
+import org.elasticsearch.spark.sql._
+
+case class Person(ID:Int, name:String, age:Int, numFriends:Int)
+
+def mapper(line:String): Person = {
+    val fields = line.split(',')
+    val person:Person = Person(fields(0).toInt, fields(1), fields(2).toInt, fields(3).toInt)
+    return person
+}
+
+import spark.implicits._
+
+val lines = spark.sparkContext.textFile("fakefriends.csv")
+val people = lines.map(mapper).toDF()
+
+people.saveToEs("spark/people")
+```
+***
+#### Aggregations
+***Bucket by rating value:***
+```
+curl -XGET 
+'127.0.0.1:9200/ratings/rating/_search?size=0&pretty' -d ‘
+{
+    "aggs": {
+        "ratings": {
+            "terms": {
+                "field": "rating"
+            }
+        }
+    }
+}'
+```
+#### Histograms
+***display ratings by 1.0-rating intervals***
+```
+curl -XGET 
+'127.0.0.1:9200/ratings/rating/_search?size=0&pretty' -d ‘
+{
+    "aggs" : {
+        "whole_ratings": {
+            "histogram": {
+                "field": "rating",
+                    "interval": 1.0
+                }
+           }
+      }
+}'
+```
