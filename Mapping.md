@@ -87,31 +87,41 @@ curl -XGET 127.0.0.1:9200/movies/movie/_search?pretty -d'
 ```
 #### Some types of filters
 
-term: filter by exact values {“term”: {“year”: 2014}}
+**term:**
+*filter by exact values {“term”: {“year”: 2014}}*
 
-terms: match if any exact values in a list match {“terms”: {“genre”: [“Sci-Fi”, “Adventure”] } }
+**terms:** 
+*match if any exact values in a list match {“terms”: {“genre”: [“Sci-Fi”, “Adventure”] } }*
 
-range: Find numbers or dates in a given range (gt, gte, lt, lte) {“range”: {“year”: {“gte”: 2010}}}
+**range:** 
+*Find numbers or dates in a given range (gt, gte, lt, lte) {“range”: {“year”: {“gte”: 2010}}}*
 
-exists: Find documents where a field exists {“exists”: {“field”: “tags”}}
+**exists:** 
+*Find documents where a field exists {“exists”: {“field”: “tags”}}*
 
-missing: Find documents where a field is missing {“missing”: {“field”: “tags”}}
+**missing:** 
+*Find documents where a field is missing {“missing”: {“field”: “tags”}}*
 
-bool: Combine filters with Boolean logic (must, must_not, should)
+**bool:** 
+*Combine filters with Boolean logic (must, must_not, should)*
 
-match_all: returns all documents and is the default. Normally used with a filter.{“match_all”: {}}
+**match_all:** 
+*returns all documents and is the default. Normally used with a filter.{“match_all”: {}}*
 
-match: searches analyzed results, such as full text search.{“match”: {“title”: “star”}}
+**match:** 
+*searches analyzed results, such as full text search.{“match”: {“title”: “star”}}*
 
-multi_match: run the same query on multiple fields.{“multi_match”: {“query”: “star”, “fields”: [“title”, “synopsis” ] } }
+**multi_match:** 
+*run the same query on multiple fields.{“multi_match”: {“query”: “star”, “fields”: [“title”, “synopsis” ] } }*
 
-bool: Works like a bool filter, but results are scored by relevance.
+**bool:** 
+*Works like a bool filter, but results are scored by relevance.*
 ***
 #### Syntax reminder
 
-queries are wrapped in a “query”: { } block, filters are wrapped in a “filter”: { } block.
+**queries are wrapped in a “query”: { } block, filters are wrapped in a “filter”: { } block.**
 
-you can combine filters inside queries, or queries inside filters too.
+*You can combine filters inside queries, or queries inside filters too.*
 ```
 curl -XGET 127.0.0.1:9200/movies/movie/_search?pretty -d'
 {
