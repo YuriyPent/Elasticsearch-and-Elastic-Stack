@@ -225,7 +225,7 @@ curl -XPUT 127.0.0.1:9200/movies/ -d '
 ```
 curl -XGET '127.0.0.1:9200/movies/movie/_search?sort=title.raw&pretty'
 ```
-***sadly, you cannot change the mapping on an existing index. You’d have to delete it, set up a new mapping, and re-index it. Like the number of shards, this is something you should think about before importing data into your index.***
+***Sadly, you cannot change the mapping on an existing index. You’d have to delete it, set up a new mapping, and re-index it. Like the number of shards, this is something you should think about before importing data into your index.***
 
 #### Another filtered query
 ```
@@ -240,3 +240,69 @@ curl -XGET 127.0.0.1:9200/movies/_search?pretty -d'
       }
 }'
 ```
+#### Fuzzy matches
+
+***A way to account for typos and misspellings the levenshtein edit distance accounts for:***
+* ***substitutions of characters (interstellar -> intersteller)***
+* ***insertions of characters (interstellar -> insterstellar)***
+* ***deletion of characters (interstellar -> interstelar) all of the above have an edit distance of 1.***
+
+#### The fuzziness parameter
+```
+curl -XGET 127.0.0.1:9200/movies/movie/_search?pretty -d '
+{
+    "query": {
+        "fuzzy": {
+            "title": {"value": "intrsteller", "fuzziness": 2}
+        }
+    }
+}'
+```
+***
+#### Partial matching
+***Prefix queries on strings. 
+If we remapped year to be a string…***
+```
+curl -XGET '127.0.0.1:9200/movies/movie/_search?pretty' -d '
+{
+    "query": {
+        "prefix": {
+            "year": "201"
+        }
+    }
+}'
+```
+***wildcard queries***
+```
+curl -XGET '127.0.0.1:9200/movies/movie/_search?pretty' -d '
+{
+"query": {
+"wildcard": {
+"year": "1*"
+}
+}
+}'
+```
+***“regexp” queries also exist.***
+#### query-time search-as-you-type
+```
+curl -XGET '127.0.0.1:9200/movies/movie/_search?pretty' -d '
+{
+    "query": {
+        "match_phrase_prefix": {
+            "title": {
+                "query": "star trek",
+                    "slop": 10
+            }
+        }
+    }
+}'
+```
+#### index-time with N-grams
+
+***“star”:
+unigram:  [ s, t, a, r ]
+bigram:  [ st, ta, ar ]
+trigram:  [ sta, tar ]
+4-gram:  [ star ]
+edge n-grams are built only on the beginning of each term.***
