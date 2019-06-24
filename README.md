@@ -1,4 +1,4 @@
-### Setup Instructions
+# Setup Instructions
 #### 1. Install Virtualbox 
 ### Port forwarding rules
 	Elasticsearch	TCP	127.0.0.1	9200	-	9200
